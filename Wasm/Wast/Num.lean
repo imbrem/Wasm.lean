@@ -35,7 +35,7 @@ namespace NumType
 
 /- Webassembly works on 32 and 64 bit ints and floats.
 We define NumType inductive as a combination of int and float constructors with BitSize. -/
-inductive NumType :=
+inductive NumType where
 | int : BitSize → NumType
 | float : BitSize → NumType
 
@@ -83,7 +83,7 @@ private def parseDigit (x : Char) : Option Nat :=
   | _ => .none
 
 /- Verifiably parsed digit. -/
-structure Digit (x : Char) :=
+structure Digit (x : Char) where
   parsed : Cached parseDigit x := {}
   doesParse : Option.isSome parsed.val := by trivial
   deriving Repr
@@ -94,9 +94,9 @@ def extractDigit (d : Digit x)
   let doesParse := d.doesParse
   match prBranch : d.parsed.val with
   | .some y => y
-  | .none => by simp only [prBranch] at doesParse
+  | .none => by simp [prBranch] at doesParse
 
-instance : Coe (Digit x) Nat where
+instance : CoeOut (Digit x) Nat where
   coe d := extractDigit d
 
 --
@@ -211,7 +211,7 @@ def extractNat (n : Nat' x) : Nat :=
     -- simp only [isOk, prBranch] at doesParse
     contradiction
 
-instance : Coe (Nat' x) Nat where
+instance : CoeOut (Nat' x) Nat where
   coe n := extractNat n
 
 /- Perhaps, construct a valid Natural.
@@ -269,7 +269,7 @@ def extractInt (n : Int' x) : Int :=
     contradiction
     -- simp only [Either.isRight, prBranch] at doesParse
 
-instance : Coe (Int' x) Int where
+instance : CoeOut (Int' x) Int where
   coe n := extractInt n
 
 /- Perhaps, construct a valid Integer.
@@ -368,7 +368,7 @@ def extractFloat (n : Float' x) : Float :=
     rw [npBranch] at doesParse
     contradiction
 
-instance : Coe (Float' x) Float where
+instance : CoeOut (Float' x) Float where
   coe n := extractFloat n
 
 /- Perhaps, construct a valid Float.
@@ -420,6 +420,9 @@ inductive NumUniT where
 instance : ToString NumUniT where
   toString | .i ci => s!"(NumUniT.i {ci})"
            | .f ci => s!"(NumUniT.f {ci})"
+
+instance : Inhabited NumUniT where
+  default := .i $ ConstInt.mk 64 0
 
 def numUniTP : Parsec Char String Unit NumUniT :=
   .i <$> iP <|> .f <$> fP

@@ -9,21 +9,17 @@ package Wasm {
 lean_lib Wasm
 
 require LSpec from git
-  "https://github.com/lurk-lab/LSpec" @ "88f7d23e56a061d32c7173cea5befa4b2c248b41"
+  "https://github.com/lurk-lab/LSpec" @ "7f2c46b"
 
 require YatimaStdLib from git
-  "https://github.com/lurk-lab/YatimaStdLib.lean" @ "9a49b49fc35a960ee333b47c4960390543defabd"
+  "https://github.com/imbrem/YatimaStdLib.lean" @ "main"
 
 require Megaparsec from git
-  "https://github.com/lurk-lab/Megaparsec.lean" @ "8859f129d199d5be82962140e9b886c0fd49e89c"
-
--- require Yatima from git
---   "https://github.com/lurk-lab/yatima" @ "26e896debf14cf3bb09a7a8a00f70583ae95469d"
+  "https://github.com/imbrem/Megaparsec.lean" @ "main"
 
 @[default_target]
-lean_exe wasm {
-  root := "Main"
-}
+lean_exe wasm where
+  root := `Main
 
 lean_exe Tests.Dependent
 lean_exe Tests.Leb128

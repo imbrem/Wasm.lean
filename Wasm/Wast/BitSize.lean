@@ -11,14 +11,14 @@ open Megaparsec.Parsec
 
 /- Webassembly works on 32 and 64 bit ints and floats.
 We define BitSize inductive to then combine it with respective constructors. -/
-inductive BitSize :=
+inductive BitSize where
 | thirtyTwo
 | sixtyFour
 deriving DecidableEq
 
 /- Webassembly supports SIMD instructions over blobs of 128 bits.
 In case they'll support other sizes of blobs, we recorded this fact into an inductive. -/
-inductive BitSizeSIMD :=
+inductive BitSizeSIMD where
 | hundredTwentyEight
 deriving DecidableEq
 

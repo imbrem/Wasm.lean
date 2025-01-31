@@ -140,7 +140,7 @@ def instantiateGlobals (gs : List Global) : Globals :=
   gs.map fun g =>
     let val := match g.init with
     | .const _t cv => cv
-    | _ => sorry -- TODO: global.get case
+    | _ => panic! "not implemented" -- TODO: global.get case
     ⟨g.name, val, g.type⟩
 
 def findGlobalByName? (gs : Globals) (x : String) : Option GlobalInstance :=
@@ -424,9 +424,11 @@ def getInt : StackEntry → EngineM m Int
   | .num (.i n) => pure n.val
   | _ => throwEE .typecheck_failed
 
+def unsign (x : Int) (bs : BitSize) : Int := (BitVec.ofInt bs x).toNat
+
 def unsigned (f : Int → Int → Int) (t : Type') := fun x y =>
   match t with
-  | .i bs => f (Int.unsign x bs) (Int.unsign y bs)
+  | .i bs => f (unsign x bs) (unsign y bs)
   | .f _ => unreachable!
 
 mutual
@@ -603,7 +605,7 @@ mutual
     | .br_if l => checkGet_i32 fun n =>
         do if n ≠ 0 then runOp (.br l)
     | .br_table ls ld => checkGet_i32 fun n =>
-        if let .some l := ls.get? (n.unsign 32).natAbs
+        if let .some l := ls.get? (unsign n 32).natAbs
           then runOp (.br l)
           else runOp (.br ld)
     | .call fi => do match fetchFAddress (←getStore) fi with

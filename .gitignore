@@ -1,3 +1,4 @@
+.lake
 *.olean
 result*
 build/
@@ -8,3 +9,4 @@ wasm-sandbox.exe # Haha, tough chance
 wast-dump*bytes
 wast-dump*bytes.lean
 Tests/Data/testsuite
+wsrepo

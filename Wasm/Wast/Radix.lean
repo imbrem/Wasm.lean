@@ -7,7 +7,7 @@ open Megaparsec.Common
 open Megaparsec.Parsec
 
 /- Webassembly supports two radixes: 10 and 16, which we naively implement here by force. -/
-inductive Radix :=
+inductive Radix where
   | ten
   | sixteen
   deriving Repr

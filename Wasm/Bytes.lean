@@ -107,7 +107,7 @@ def indexLocals (f : Func) (ftypes : FTypes) : Locals :=
     | .some ft =>
       let stripped := ft.ins.map fun p => {p with name := .none}
       stripped.enum
-    | .none => sorry
+    | .none => panic! "not implemented"
   let idxLocals := f.locals.enumFrom idxParams.length
   idxParams ++ idxLocals
 
@@ -134,12 +134,12 @@ def indexIdentifiedGlobals (gs : List Global) : Globals :=
 -- TODO: lens lib? 🥺
 private partial def traverseOp : Operation → List FunctionType
   | .block _ ps ts ops =>
-    let fts := (ops.map traverseOp).join
+    let fts := (ops.map traverseOp).flatten
     if !ps.isEmpty || !ts.length ≤ 1
       then mkFunctionType ps ts :: fts
       else fts
   | .loop _ ps ts ops =>
-    let fts := (ops.map traverseOp).join
+    let fts := (ops.map traverseOp).flatten
     if !ps.isEmpty || !ts.length ≤ 1
       then mkFunctionType ps ts :: fts
       else fts
@@ -149,7 +149,7 @@ private partial def traverseOp : Operation → List FunctionType
       else []
     let bth := thens.map traverseOp
     let belse := elses.map traverseOp
-    bts ++ bth.join ++ belse.join
+    bts ++ bth.flatten ++ belse.flatten
   | _ => []
 
 /-- Extract a 'function type' construct. -/
@@ -161,7 +161,7 @@ def extractFunctionType (ft : FunctionType) : ByteArray :=
 
 /-- Collect `FunctionType`s of structured control instructions of a `Func`. -/
 def collectFuncBlockTypes (f : Func) : FTypes :=
-  f.ops.map traverseOp |>.join
+  f.ops.map traverseOp |>.flatten
 
 /-- Collect all `FunctionType`s from a `Func`, including blocktypes.-/
 def collectFuncAllTypes (f : Func) : FTypes :=
@@ -402,25 +402,25 @@ def extractLocalLabel : LocalLabel → ExtractM ByteArray
   | .by_index idx => pure $ sLeb128 idx
   | .by_name name => do match (←readLocals).find? (·.2.name = .some name) with
     | .some (idx, _) => pure $ sLeb128 idx
-    | .none => sorry
+    | .none => panic! "not implemented"
 
 def extractGlobalLabel : GlobalLabel → ExtractM ByteArray
   | .by_index idx => pure $ sLeb128 idx
   | .by_name name => do match (←readGlobals).find? (·.2.name = .some name) with
     | .some (idx, _) => pure $ sLeb128 idx
-    | .none => sorry
+    | .none => panic! "not implemented"
 
 def extractBlockLabelId : BlockLabelId → ExtractM ByteArray
   | .by_index idx => pure $ sLeb128 idx
   | .by_name name => do match (←get).findIdx? (· = .some name) with
     | .some idx => pure $ sLeb128 idx
-    | .none => sorry
+    | .none => panic! "not implemented"
 
 def extractFuncId : FuncId → ExtractM ByteArray
   | .by_index idx => pure $ uLeb128 idx
   | .by_name name => do match (←readFIds).find? (·.2 = name) with
     | .some (idx, _) => pure $ sLeb128 idx
-    | .none => sorry
+    | .none => panic! "not implemented"
 
 def extractBlockType : FunctionType → ExtractM ByteArray
   | ⟨_,[],[]⟩ => pure $ b 0x40
@@ -439,7 +439,7 @@ partial def extractOp (op : Operation) : ExtractM ByteArray := do
   | .drop => pure $ b 0x1a
   | .const (.i 32) (.i ci) => pure $ b 0x41 ++ sLeb128 ci.val
   | .const (.i 64) (.i ci) => pure $ b 0x42 ++ sLeb128 ci.val
-  | .const _ _ => sorry -- TODO: float binary encoding
+  | .const _ _ => panic! "not implemented" -- TODO: float binary encoding
   | .select .none => pure $ b 0x1b
   | .select (.some t) => pure $ b 0x1c ++ mkVec [t] (b ∘ ttoi)
   | .eqz t => pure $ extractEqz t
@@ -524,7 +524,7 @@ def typeHeader := b 0x01
 
 def extractTypes (m : Module) : FTypes :=
   poorMansDeduplicate $
-    m.types ++ (m.func.map collectFuncAllTypes |> .join)
+    m.types ++ (m.func.map collectFuncAllTypes |> .flatten)
 
 /- Function section -/
 
@@ -534,7 +534,7 @@ def extractFuncIds (m : Module) (types : FTypes) : ByteArray :=
       | .inl (.by_index idx) => idx
       | .inl (.by_name n) => match types.findIdx? (·.tid = .some n) with
         | .some idx => idx
-        | .none => sorry
+        | .none => panic! "not implemented"
       | .inr (params, results) => types.indexOf ⟨.none, params, results⟩
     let funcIds := mkVec m.func (uLeb128 ∘ getIndex)
     b 0x03 ++ lindex funcIds
@@ -543,7 +543,7 @@ def extractFuncBody (fids : FuncIds) (functypes : FTypes) (gls : Globals)
                     (f : Func)
                     : (ByteArray × BlockLabels) :=
   -- Locals are encoded with counts of subgroups of the same type.
-  let localGroups := f.locals.groupBy (fun l1 l2 => l1.type = l2.type)
+  let localGroups := f.locals.splitBy (fun l1 l2 => l1.type = l2.type)
   let extractCount
     | ls@(l::_) => uLeb128 ls.length ++ b (ttoi l.type)
     | [] => b0

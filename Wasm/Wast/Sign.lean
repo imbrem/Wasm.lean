@@ -7,7 +7,7 @@ open Megaparsec.Common
 open Megaparsec.Parsec
 
 /- Webassembly supports signed numbers. -/
-inductive Sign :=
+inductive Sign where
 | plus
 | minus
 

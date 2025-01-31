@@ -131,7 +131,7 @@ private def identifiedLocalP : Parsec Char String Unit (List Local) := do
 
 def brLocsP (x : String) : Parsec Char String Unit (List Local) :=
   let p := string x *> ignoreP *> (identifiedLocalP <|> anonLocalsP)
-  List.join <$> manyLispP p
+  List.flatten <$> manyLispP p
 
 def genLocalP (x : String) : Parsec Char String Unit Local :=
   string x *> ignoreP *>
@@ -156,7 +156,7 @@ def resultP : Parsec Char String Unit (List Type') :=
   string "result" *> ignoreP *> vecP typeP
 
 def brResultsP : Parsec Char String Unit (List Type') :=
-  List.join <$> manyLispP resultP
+  List.flatten <$> manyLispP resultP
 
 private def nopP : Parsec Char String Unit Operation :=
   string "nop" *> pure .nop
@@ -263,7 +263,7 @@ private def returnP : Parsec Char String Unit Operation :=
       owP
       let ops ← opsP
       pure $ ops ++ mainOp
-    List.join <$> sepEndBy' unfoldOpP owP
+    List.flatten <$> sepEndBy' unfoldOpP owP
 
   partial def blockOpP : Parsec Char String Unit Operation := do
   let op ← (string "block" *> pure Operation.block)
